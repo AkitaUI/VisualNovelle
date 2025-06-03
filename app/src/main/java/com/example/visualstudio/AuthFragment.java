@@ -1,3 +1,4 @@
+// File: AuthFragment.java
 package com.example.visualstudio;
 
 import android.os.Bundle;
@@ -22,7 +23,7 @@ import com.google.firebase.database.FirebaseDatabase;
 public class AuthFragment extends Fragment {
 
     private EditText etEmail, etPassword;
-    private Button btnRegister, btnLogin;
+    private Button btnRegister, btnLogin, btnCancel;
     private ProgressBar progressBar;
 
     private FirebaseAuth mAuth;
@@ -30,23 +31,36 @@ public class AuthFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_auth, container, false);
 
+        // Инициализируем Firebase
         mAuth = FirebaseAuth.getInstance();
         usersRef = FirebaseDatabase.getInstance().getReference("Users");
 
+        // Находим все View-элементы
         etEmail = view.findViewById(R.id.et_email);
         etPassword = view.findViewById(R.id.et_password);
         btnRegister = view.findViewById(R.id.btn_register);
         btnLogin = view.findViewById(R.id.btn_login);
+        btnCancel = view.findViewById(R.id.btn_cancel_auth);  // новая кнопка
         progressBar = view.findViewById(R.id.progress_bar);
 
         progressBar.setVisibility(View.GONE);
 
         btnRegister.setOnClickListener(v -> registerUser());
         btnLogin.setOnClickListener(v -> loginUser());
+
+        // Обработчик для кнопки «Отмена» (переход на StartFragment)
+        btnCancel.setOnClickListener(v -> {
+            requireActivity()
+                    .getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new StartFragment())
+                    .commit();
+        });
 
         return view;
     }
@@ -64,7 +78,7 @@ public class AuthFragment extends Fragment {
             return;
         }
         if (password.length() < 6) {
-            etPassword.setError("Пароль должен быть не менее 6 символов");
+            etPassword.setError("Пароль должен быть ≥ 6 символов");
             return;
         }
 
@@ -74,26 +88,28 @@ public class AuthFragment extends Fragment {
                 .addOnCompleteListener(requireActivity(), task -> {
                     progressBar.setVisibility(View.GONE);
                     if (task.isSuccessful()) {
-                        // Регистрация успешна. Сохраним профиль в базе (можно добавить дополнительные поля)
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
                             String uid = user.getUid();
-                            // Создадим модель пользователя (здесь только email, но можно добавить имя, аватар и пр.)
-                            UserProfile profile = new UserProfile(email);
-
+                            UserProfile profile = new UserProfile(user.getEmail());
                             usersRef.child(uid).setValue(profile)
                                     .addOnSuccessListener(aVoid -> {
                                         Toast.makeText(getContext(), "Регистрация успешна!", Toast.LENGTH_SHORT).show();
-                                        // TODO: после успешной регистрации перейти к нужному экрану (например, назад на StartFragment)
-                                        requireActivity().getSupportFragmentManager().popBackStack();
+                                        requireActivity()
+                                                .getSupportFragmentManager()
+                                                .beginTransaction()
+                                                .replace(R.id.fragment_container, new AccountFragment())
+                                                .commit();
                                     })
-                                    .addOnFailureListener(e -> {
-                                        Toast.makeText(getContext(), "Ошибка при сохранении профиля: " + e.getMessage(),
-                                                Toast.LENGTH_LONG).show();
-                                    });
+                                    .addOnFailureListener(e ->
+                                            Toast.makeText(getContext(),
+                                                    "Ошибка при сохранении профиля: " + e.getMessage(),
+                                                    Toast.LENGTH_LONG).show()
+                                    );
                         }
                     } else {
-                        Toast.makeText(getContext(), "Не удалось зарегистрироваться: " + task.getException().getMessage(),
+                        Toast.makeText(getContext(),
+                                "Не удалось зарегистрироваться: " + task.getException().getMessage(),
                                 Toast.LENGTH_LONG).show();
                     }
                 });
@@ -121,11 +137,15 @@ public class AuthFragment extends Fragment {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
                             Toast.makeText(getContext(), "Вход выполнен!", Toast.LENGTH_SHORT).show();
-                            // TODO: после успешного входа перейти к нужному экрану (например, на главный экран игры)
-                            requireActivity().getSupportFragmentManager().popBackStack();
+                            requireActivity()
+                                    .getSupportFragmentManager()
+                                    .beginTransaction()
+                                    .replace(R.id.fragment_container, new AccountFragment())
+                                    .commit();
                         }
                     } else {
-                        Toast.makeText(getContext(), "Ошибка входа: " + task.getException().getMessage(),
+                        Toast.makeText(getContext(),
+                                "Ошибка входа: " + task.getException().getMessage(),
                                 Toast.LENGTH_LONG).show();
                     }
                 });
