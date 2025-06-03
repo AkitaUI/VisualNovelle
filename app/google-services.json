@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "706373604363",
+    "project_id": "visualnovelauth",
+    "storage_bucket": "visualnovelauth.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:706373604363:android:d8fb2fc979e141ede7e30e",
+        "android_client_info": {
+          "package_name": "com.example.visualstudio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDe3UZtAh8Jng1Q6ilm_7B0Tn5Eed6Ko00"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
