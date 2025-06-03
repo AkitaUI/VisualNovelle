@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scene_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Фон сцены -->
+    <ImageView
+        android:id="@+id/iv_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="Background" />
+
+    <!-- Портрет слева -->
+    <ImageView
+        android:id="@+id/iv_left_char"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start|bottom"
+        android:adjustViewBounds="true"
+        android:visibility="gone"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="Left Character" />
+
+    <!-- Портрет справа -->
+    <ImageView
+        android:id="@+id/iv_right_char"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="end|bottom"
+        android:adjustViewBounds="true"
+        android:visibility="gone"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="Right Character" />
+
+    <!-- Нижний полу-прозрачный блок для диалога -->
+    <LinearLayout
+        android:id="@+id/dialog_container"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:background="#AA000000"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tv_speaker_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Имя"
+            android:textSize="18sp"
+            android:textColor="#FFCC00"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:id="@+id/tv_dialogue_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Текст"
+            android:textSize="16sp"
+            android:textColor="#FFF" />
+    </LinearLayout>
+
+    <!-- Перехват клика по экрану -->
+    <View
+        android:id="@+id/click_interceptor"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent" />
+</FrameLayout>

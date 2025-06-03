@@ -20,7 +20,12 @@ public class StartFragment extends Fragment {
         // Кнопка "Играть" (осталась без изменений)
         Button btnPlay = view.findViewById(R.id.btn_play);
         btnPlay.setOnClickListener(v -> {
-            // ... ваша логика "Играть" ...
+            requireActivity()
+                    .getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new GameFragment())
+                    .addToBackStack(null)
+                    .commit();
         });
 
         // Кнопка "Настройки"
