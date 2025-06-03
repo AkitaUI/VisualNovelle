@@ -17,6 +17,24 @@ public class StartFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_start, container, false);
 
+        // Кнопка "Играть" (осталась без изменений)
+        Button btnPlay = view.findViewById(R.id.btn_play);
+        btnPlay.setOnClickListener(v -> {
+            // ... ваша логика "Играть" ...
+        });
+
+        // Кнопка "Настройки"
+        Button btnSettings = view.findViewById(R.id.btn_settings);
+        btnSettings.setOnClickListener(v -> {
+            requireActivity()
+                    .getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new SettingsFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
+
+        // Кнопка "Аутентификация"
         Button btnAuth = view.findViewById(R.id.btn_auth);
         btnAuth.setOnClickListener(v -> {
             requireActivity()
