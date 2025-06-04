@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/scene_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -36,6 +37,92 @@
         android:layout_marginBottom="16dp"
         android:contentDescription="Right Character" />
 
+    <!-- === Здесь добавляем иконку меню и само всплывающее окно === -->
+
+    <!-- Перехват клика по экрану: подняли выше, чтобы не закрывать иконку меню -->
+    <View
+        android:id="@+id/click_interceptor"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent" />
+
+    <!-- 1. Иконка меню в правом верхнем углу (сдвинута вниз на 40dp) -->
+    <ImageButton
+        android:id="@+id/btn_menu"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="end|top"
+        android:layout_marginTop="56dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/settings"
+        android:contentDescription="Menu Button" />
+
+    <!-- 2. Всплывающее окно-меню; совпадает по правому и верхнему краю с иконкой -->
+    <LinearLayout
+        android:id="@+id/menu_popup"
+        android:layout_width="240dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/popup_menu_background"
+        android:padding="16dp"
+        android:visibility="gone"
+        android:layout_gravity="end|top"
+        android:layout_marginTop="56dp"
+        android:layout_marginEnd="16dp">
+
+        <!-- Кнопка закрытия: та же иконка, что и btn_menu -->
+        <ImageButton
+            android:id="@+id/btn_menu_close"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="end"
+            android:background="@drawable/close_button_background"
+            android:padding="8dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/settings"
+            android:contentDescription="Close Menu"/>
+
+        <!-- Пункт: Сохранить игру -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_save_game"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Сохранить игру"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:background="@drawable/menu_button_background"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Пункт: Загрузить игру -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_load_game"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Загрузить игру"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:background="@drawable/menu_button_background"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Пункт: Вернуться в меню -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_return_menu"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Вернуться в меню"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:background="@drawable/menu_button_background"
+            android:layout_marginTop="8dp"/>
+        </LinearLayout>
+        <!-- =============================================== -->
+
     <!-- Нижний полу-прозрачный блок для диалога -->
     <LinearLayout
         android:id="@+id/dialog_container"
@@ -64,11 +151,4 @@
             android:textSize="16sp"
             android:textColor="#FFFFFF" />
     </LinearLayout>
-
-    <!-- Перехват клика по экрану -->
-    <View
-        android:id="@+id/click_interceptor"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/transparent" />
 </FrameLayout>

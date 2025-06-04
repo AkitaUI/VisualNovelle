@@ -4,12 +4,16 @@ package com.example.visualstudio;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableStringBuilder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -21,12 +25,21 @@ import java.util.List;
 
 public abstract class BaseSceneFragment extends Fragment {
 
+    // UI-элементы базовые
     private ImageView ivBackground;
     private ImageView ivLeftChar;
     private ImageView ivRightChar;
     private TextView tvSpeakerName;
     private TextView tvDialogueText;
     private View clickInterceptor;
+
+    // Новые поля для меню
+    private ImageButton btnMenu;         // основная иконка
+    private LinearLayout menuPopup;      // всплывающее окно
+    private ImageButton btnMenuClose;    // иконка внутри popup для закрытия
+    private Button btnSaveGame;
+    private Button btnLoadGame;
+    private Button btnReturnMenu;
 
     // Данные сцены
     private SceneData sceneData;
@@ -68,6 +81,43 @@ public abstract class BaseSceneFragment extends Fragment {
         tvSpeakerName = view.findViewById(R.id.tv_speaker_name);
         tvDialogueText = view.findViewById(R.id.tv_dialogue_text);
         clickInterceptor = view.findViewById(R.id.click_interceptor);
+
+        // ======== Новые для меню ========
+        btnMenu = view.findViewById(R.id.btn_menu);
+        menuPopup = view.findViewById(R.id.menu_popup);
+        btnMenuClose = view.findViewById(R.id.btn_menu_close);
+        btnSaveGame = view.findViewById(R.id.btn_save_game);
+        btnLoadGame = view.findViewById(R.id.btn_load_game);
+        btnReturnMenu = view.findViewById(R.id.btn_return_menu);
+
+        btnMenu.bringToFront();
+        menuPopup.bringToFront();
+        btnMenuClose.bringToFront();
+        btnSaveGame.bringToFront();
+        btnLoadGame.bringToFront();
+        btnReturnMenu.bringToFront();
+
+        // ======== Настройки поведения меню ========
+        // При клике на иконку меню — показываем или скрываем окно
+        btnMenu.setOnClickListener(v -> {
+            if (menuPopup.getVisibility() == View.GONE) {
+                menuPopup.setVisibility(View.VISIBLE);
+            } else {
+                menuPopup.setVisibility(View.GONE);
+            }
+        });
+        // При клике по иконке внутри popup — просто скрыть окно
+        btnMenuClose.setOnClickListener(v -> menuPopup.setVisibility(View.GONE));
+        // Заглушки для кнопок (пока без логики)
+        btnSaveGame.setOnClickListener(v -> {
+            // TODO: позже реализуем
+        });
+        btnLoadGame.setOnClickListener(v -> {
+            // TODO: позже реализуем
+        });
+        btnReturnMenu.setOnClickListener(v -> {
+            // TODO: позже реализуем
+        });
 
         // 1. Подготовка данных сцены
         sceneData = createSceneData();
@@ -194,7 +244,7 @@ public abstract class BaseSceneFragment extends Fragment {
     }
 
     private void shakeImage(ImageView imageView) {
-        int delta = 40;           // смещение в пикселях
+        int delta = 30;           // смещение в пикселях
         int cycles = 4;           // 4 полных «туда-обратно» в секунду
         int totalDuration = 1000; // миллисекунд
         int singleDuration = totalDuration / (cycles * 2);
