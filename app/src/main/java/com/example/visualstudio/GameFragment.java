@@ -20,6 +20,23 @@ import androidx.fragment.app.Fragment;
  */
 public class GameFragment extends Fragment implements BaseSceneFragment.SceneCompleteListener {
 
+    private Integer startSceneIndex = null;
+    private Integer startDialogueIndex = null;
+
+    public int getCurrentSceneIndex() {
+        return currentSceneIndex;
+    }
+
+    // Для GameFragment: если нужно передать туда сохранённую позицию через аргументы:
+    public static GameFragment newInstance(int sceneIndex, int dialogueIndex) {
+        GameFragment fragment = new GameFragment();
+        Bundle args = new Bundle();
+        args.putInt("scene_index", sceneIndex);
+        args.putInt("dialogue_index", dialogueIndex);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     // Список классов фрагментов-сцен. Можно добавить сколько нужно
     private final Class<? extends BaseSceneFragment>[] sceneClasses = new Class[]{
             Scene1Fragment.class,
@@ -48,26 +65,45 @@ public class GameFragment extends Fragment implements BaseSceneFragment.SceneCom
         fadeOverlay = view.findViewById(R.id.fade_overlay);
         fadeOverlay.setVisibility(View.GONE);
 
-        // Запускаем первую сцену
-        loadScene(currentSceneIndex);
+        Bundle args = getArguments();
+        if (args != null) {
+            if (args.containsKey("scene_index") && args.containsKey("dialogue_index")) {
+                startSceneIndex = args.getInt("scene_index");
+                startDialogueIndex = args.getInt("dialogue_index");
+            }
+        }
+
+        // Если была передана стартовая позиция — запустим с неё, иначе с 0
+        if (startSceneIndex != null) {
+            currentSceneIndex = startSceneIndex;
+            // При загрузке сцены нам нужно передать в неё startDialogueIndex
+            loadScene(currentSceneIndex, startDialogueIndex);
+        } else {
+            loadScene(currentSceneIndex);
+        }
 
         return view;
     }
 
-    /**
-     * Загружает фрагмент сцены по индексу.
-     * Устанавливаем для него слушатель onSceneComplete(this), чтобы получать колбэк.
-     */
     private void loadScene(int index) {
-        if (index < 0 || index >= sceneClasses.length) {
-            // Все сцены показаны
-            return;
-        }
+        loadScene(index, 0);
+    }
+
+    /**
+     * Загружает сцену по индексу index и сразу "перепрыгивает" на dialogueIndex.
+     */
+    private void loadScene(int index, int dialogueStartIndex) {
+        if (index < 0 || index >= sceneClasses.length) return;
         try {
             BaseSceneFragment sceneFragment = sceneClasses[index].newInstance();
             sceneFragment.setSceneCompleteListener(this);
 
-            // Заменяем в контейнере
+            // Передаём в BaseSceneFragment (или в его подкласс) нужный индекс диалога:
+            Bundle args = new Bundle();
+            args.putInt("load_dialogue_index", dialogueStartIndex);
+            sceneFragment.setArguments(args);
+
+            // Вставляем фрагмент
             getChildFragmentManager()
                     .beginTransaction()
                     .replace(R.id.scene_container, sceneFragment)
