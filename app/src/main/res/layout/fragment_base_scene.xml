@@ -54,7 +54,7 @@
             android:textSize="18sp"
             android:textColor="#FFCC00"
             android:textStyle="bold"
-            android:layout_marginBottom="4dp"/>
+            android:layout_marginBottom="4dp" />
 
         <TextView
             android:id="@+id/tv_dialogue_text"
@@ -62,7 +62,7 @@
             android:layout_height="wrap_content"
             android:text="Текст"
             android:textSize="16sp"
-            android:textColor="#FFF" />
+            android:textColor="#FFFFFF" />
     </LinearLayout>
 
     <!-- Перехват клика по экрану -->
