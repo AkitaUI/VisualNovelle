@@ -1,0 +1,8 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#8B4513"/> <!-- полупрозрачный белый -->
+    <stroke
+        android:width="2dp"
+        android:color="#DEB887"/> <!-- фиолетовый контур -->
+    <corners android:radius="8dp"/> <!-- скругление -->
+</shape>
