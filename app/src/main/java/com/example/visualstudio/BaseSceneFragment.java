@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.SpannableStringBuilder;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,8 +24,20 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnFailureListener;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class BaseSceneFragment extends Fragment {
 
@@ -44,8 +57,9 @@ public abstract class BaseSceneFragment extends Fragment {
     private Button btnLoadGame;
     private Button btnReturnMenu;
 
-    private com.google.firebase.auth.FirebaseAuth mAuth;
-    private com.google.firebase.database.DatabaseReference savesRef;
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore firestore;
+    private CollectionReference savesCollection;
 
     private static final String PREFS_NAME = "guest_save_prefs";
     private static final String KEY_SCENE = "local_scene_index";
@@ -85,11 +99,11 @@ public abstract class BaseSceneFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_base_scene, container, false);
 
-        // ======== Инициализируем mAuth и savesRef (но пока не используем в btnLoadGame) ========
-        mAuth = com.google.firebase.auth.FirebaseAuth.getInstance();
-        com.google.firebase.database.FirebaseDatabase database =
-                com.google.firebase.database.FirebaseDatabase.getInstance();
-        savesRef = database.getReference("saves");
+        // Инициализация FirebaseAuth и Firestore
+        mAuth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
+        // Ссылка на коллекцию "saves"
+        savesCollection = firestore.collection("saves");
 
         // ======== Находим все View-элементы ========
         ivBackground     = view.findViewById(R.id.iv_background);
@@ -126,34 +140,120 @@ public abstract class BaseSceneFragment extends Fragment {
         btnMenuClose.setOnClickListener(v -> menuPopup.setVisibility(View.GONE));
 
         btnSaveGame.setOnClickListener(v -> {
-            // 1) Определяем текущую позицию
+            FirebaseUser user = mAuth.getCurrentUser();
+            Toast.makeText(getContext(),
+                    "SaveGame: currentUser = " + (user == null ? "null" : user.getUid()),
+                    Toast.LENGTH_LONG).show();
+
             int sceneIndex = 0;
             if (getParentFragment() instanceof GameFragment) {
                 sceneIndex = ((GameFragment) getParentFragment()).getCurrentSceneIndex();
             }
             int dialogueIndex = currentDialogueIndex;
 
-            // 2) Сохраняем в SharedPreferences (гость)
-            SharedPreferences prefs =
-                    requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            prefs.edit()
-                    .putInt(KEY_SCENE, sceneIndex)
-                    .putInt(KEY_DIALOGUE, dialogueIndex)
-                    .apply();
+            if (user != null) {
+                // Сохранение в Firestore
+                String uid = user.getUid();
+                // Подколлекция user_saves внутри документа с ID=uid
+                CollectionReference userSavesRef = savesCollection
+                        .document(uid)
+                        .collection("user_saves");
 
-            // Сообщаем, что локальное сохранение записано
-            Toast.makeText(getContext(),
-                    "Сохранено локально: сцена=" + sceneIndex + " диалог=" + dialogueIndex,
-                    Toast.LENGTH_SHORT).show();
+                // Генерируем новый documentId (Firestore сам создаст пустой документ)
+                String saveId = userSavesRef.document().getId();
+                SavePoint sp = new SavePoint(sceneIndex, dialogueIndex);
 
-            // Загружаем это же сохранение (для проверки)
-            showGuestSave();
+                // Добавляем поле timestamp, чтобы проще сортировать
+                Map<String, Object> data = new HashMap<>();
+                data.put("sceneIndex", sp.sceneIndex);
+                data.put("dialogueIndex", sp.dialogueIndex);
+                data.put("timestamp", System.currentTimeMillis());
+
+                userSavesRef.document(saveId)
+                        .set(data)
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(getContext(), "Сохранено в облаке Firestore", Toast.LENGTH_SHORT).show();
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e("FirestoreSave", "Ошибка при set(): ", e);
+                            Toast.makeText(getContext(),
+                                    "Ошибка при сохранении: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        });
+
+            } else {
+                // Гость: локальное сохранение (SharedPreferences), как раньше
+                SharedPreferences prefs =
+                        requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                prefs.edit()
+                        .putInt(KEY_SCENE, sceneIndex)
+                        .putInt(KEY_DIALOGUE, dialogueIndex)
+                        .apply();
+                Toast.makeText(getContext(),
+                        "Сохранено локально: сцена=" + sceneIndex + " диалог=" + dialogueIndex,
+                        Toast.LENGTH_SHORT).show();
+            }
         });
 
-        // Убираем любую логику Firebase, оставляем только локальную загрузку
         btnLoadGame.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Нажата кнопка LoadGame (локальный режим)", Toast.LENGTH_SHORT).show();
-            showGuestSave();
+            FirebaseUser user = mAuth.getCurrentUser();
+            if (user != null) {
+                // Загрузка списка сохранений из Firestore
+                String uid = user.getUid();
+                CollectionReference userSavesRef = savesCollection
+                        .document(uid)
+                        .collection("user_saves");
+
+                // Считываем все документы из user_saves
+                userSavesRef
+                        .orderBy("timestamp")   // сортировка по времени (по возрастанию или убыванию)
+                        .get()
+                        .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                            @Override
+                            public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                                if (queryDocumentSnapshots.isEmpty()) {
+                                    Toast.makeText(getContext(), "Сохранений нет", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                // Собираем все метки (например, форматируем timestamp в строку)
+                                List<String> choices = new ArrayList<>();
+                                List<SavePoint> savePoints = new ArrayList<>();
+
+                                for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                                    long ts = doc.getLong("timestamp");
+                                    int sIdx = doc.getLong("sceneIndex").intValue();
+                                    int dIdx = doc.getLong("dialogueIndex").intValue();
+
+                                    savePoints.add(new SavePoint(sIdx, dIdx));
+
+                                    // Пример форматирования: "04.06.2025 12:34"
+                                    String label = new java.text.SimpleDateFormat(
+                                            "dd.MM.yyyy HH:mm", java.util.Locale.getDefault()
+                                    ).format(new java.util.Date(ts));
+                                    choices.add(label);
+                                }
+
+                                CharSequence[] items = choices.toArray(new CharSequence[0]);
+                                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                                        .setTitle("Выберите сохранение")
+                                        .setItems(items, (dialog, which) -> {
+                                            // Когда пользователь выбирает индекс which
+                                            SavePoint sp = savePoints.get(which);
+                                            loadFromSave(sp.sceneIndex, sp.dialogueIndex);
+                                        })
+                                        .show();
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e("FirestoreLoad", "Ошибка при чтении: ", e);
+                            Toast.makeText(getContext(),
+                                    "Ошибка загрузки: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        });
+            } else {
+                // Гость: локальная загрузка
+                showGuestSave();
+            }
         });
 
         btnReturnMenu.setOnClickListener(v -> {
@@ -309,51 +409,6 @@ public abstract class BaseSceneFragment extends Fragment {
     }
 
     /**
-     * Получает список сохранений для данного uid и показывает AlertDialog
-     * с именами (ключами) сохранений. При выборе — грузим сохранение.
-     */
-    private void showSaveListFromFirebase(String uid) {
-        com.google.firebase.database.DatabaseReference userSavesRef =
-                savesRef.child(uid);
-        userSavesRef.addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot snapshot) {
-                if (!snapshot.exists()) {
-                    android.widget.Toast.makeText(getContext(),
-                            "Нет сохранений", android.widget.Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                // Собираем список ключей (timestamp) и отображаем их
-                List<String> saveKeys = new ArrayList<>();
-                for (com.google.firebase.database.DataSnapshot child : snapshot.getChildren()) {
-                    saveKeys.add(child.getKey());
-                }
-                CharSequence[] items = saveKeys.toArray(new CharSequence[0]);
-                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                        .setTitle("Выберите сохранение")
-                        .setItems(items, (dialog, which) -> {
-                            String chosenKey = saveKeys.get(which);
-                            // После выбора считываем SavePoint и грузим
-                            com.google.firebase.database.DataSnapshot chosenSnapshot =
-                                    snapshot.child(chosenKey);
-                            SavePoint sp = chosenSnapshot.getValue(SavePoint.class);
-                            if (sp != null) {
-                                loadFromSave(sp.sceneIndex, sp.dialogueIndex);
-                            }
-                        })
-                        .show();
-            }
-
-            @Override
-            public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) {
-                android.widget.Toast.makeText(getContext(),
-                        "Ошибка доступа к базе: " + error.getMessage(),
-                        android.widget.Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
-    /**
      * Загружает единственное локальное сохранение из SharedPreferences (для гостя).
      */
     /**
@@ -428,8 +483,7 @@ public abstract class BaseSceneFragment extends Fragment {
         public int sceneIndex;
         public int dialogueIndex;
 
-        public SavePoint() { } // конструктор без параметров нужен для Firebase
-
+        public SavePoint() { }                       // для Firebase RTDB
         public SavePoint(int sceneIndex, int dialogueIndex) {
             this.sceneIndex = sceneIndex;
             this.dialogueIndex = dialogueIndex;

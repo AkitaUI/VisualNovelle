@@ -60,12 +60,19 @@
             android:padding="8dp"
             android:layout_marginBottom="24dp"/>
 
+        <Button
+            android:id="@+id/btn_logout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Выйти из аккаунта" />
+
         <!-- Кнопка "Назад" на стартовый экран -->
         <Button
             android:id="@+id/btn_back"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Назад"
-            android:layout_gravity="center_horizontal"/>
+            android:layout_gravity="center_horizontal"
+            android:text="Назад" />
     </LinearLayout>
 </ScrollView>
